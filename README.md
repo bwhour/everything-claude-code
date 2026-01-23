@@ -1,5 +1,11 @@
 # Everything Claude Code
 
+[![Stars](https://img.shields.io/github/stars/affaan-m/everything-claude-code?style=flat)](https://github.com/affaan-m/everything-claude-code/stargazers)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+![Shell](https://img.shields.io/badge/-Shell-4EAA25?logo=gnu-bash&logoColor=white)
+![TypeScript](https://img.shields.io/badge/-TypeScript-3178C6?logo=typescript&logoColor=white)
+![Markdown](https://img.shields.io/badge/-Markdown-000000?logo=markdown&logoColor=white)
+
 **The complete collection of Claude Code configs from an Anthropic hackathon winner.**
 
 Production-ready agents, skills, hooks, commands, rules, and MCP configurations evolved over 10+ months of intensive daily use building real products.
@@ -10,23 +16,24 @@ Production-ready agents, skills, hooks, commands, rules, and MCP configurations 
 
 This repo is the raw code only. The guides explain everything.
 
-### Start Here: The Shorthand Guide
-
-<img width="592" height="445" alt="image" src="https://github.com/user-attachments/assets/1a471488-59cc-425b-8345-5245c7efbcef" />
-
-**[The Shorthand Guide to Everything Claude Code](https://x.com/affaanmustafa/status/2012378465664745795)**
-
-The foundation - what each config type does, how to structure your setup, context window management, and the philosophy behind these configs. **Read this first.**
-
----
-
-### Then: The Longform Guide
-
-<img width="609" height="428" alt="image" src="https://github.com/user-attachments/assets/c9ca43bc-b149-427f-b551-af6840c368f0" />
-
-**[The Longform Guide to Everything Claude Code](https://x.com/affaanmustafa/status/2014040193557471352)**
-
-The advanced techniques - token optimization, memory persistence across sessions, verification loops & evals, parallelization strategies, subagent orchestration, and continuous learning. Everything in this guide has working code in this repo.
+<table>
+<tr>
+<td width="50%">
+<a href="https://x.com/affaanmustafa/status/2012378465664745795">
+<img src="https://github.com/user-attachments/assets/1a471488-59cc-425b-8345-5245c7efbcef" alt="The Shorthand Guide to Everything Claude Code" />
+</a>
+</td>
+<td width="50%">
+<a href="https://x.com/affaanmustafa/status/2014040193557471352">
+<img src="https://github.com/user-attachments/assets/c9ca43bc-b149-427f-b551-af6840c368f0" alt="The Longform Guide to Everything Claude Code" />
+</a>
+</td>
+</tr>
+<tr>
+<td align="center"><b>Shorthand Guide</b><br/>Setup, foundations, philosophy. <b>Read this first.</b></td>
+<td align="center"><b>Longform Guide</b><br/>Token optimization, memory persistence, evals, parallelization.</td>
+</tr>
+</table>
 
 | Topic | What You'll Learn |
 |-------|-------------------|
@@ -37,13 +44,53 @@ The advanced techniques - token optimization, memory persistence across sessions
 | Parallelization | Git worktrees, cascade method, when to scale instances |
 | Subagent Orchestration | The context problem, iterative retrieval pattern |
 
+---
+
+## Cross-Platform Support
+
+This plugin now fully supports **Windows, macOS, and Linux**. All hooks and scripts have been rewritten in Node.js for maximum compatibility.
+
+### Package Manager Detection
+
+The plugin automatically detects your preferred package manager (npm, pnpm, yarn, or bun) with the following priority:
+
+1. **Environment variable**: `CLAUDE_PACKAGE_MANAGER`
+2. **Project config**: `.claude/package-manager.json`
+3. **package.json**: `packageManager` field
+4. **Lock file**: Detection from package-lock.json, yarn.lock, pnpm-lock.yaml, or bun.lockb
+5. **Global config**: `~/.claude/package-manager.json`
+6. **Fallback**: First available package manager
+
+To set your preferred package manager:
+
+```bash
+# Via environment variable
+export CLAUDE_PACKAGE_MANAGER=pnpm
+
+# Via global config
+node scripts/setup-package-manager.js --global pnpm
+
+# Via project config
+node scripts/setup-package-manager.js --project bun
+
+# Detect current setting
+node scripts/setup-package-manager.js --detect
+```
+
+Or use the `/setup-pm` command in Claude Code.
 
 ---
 
 ## What's Inside
 
+This repo is a **Claude Code plugin** - install it directly or copy components manually.
+
 ```
 everything-claude-code/
+|-- .claude-plugin/   # Plugin and marketplace manifests
+|   |-- plugin.json         # Plugin metadata and component paths
+|   |-- marketplace.json    # Marketplace catalog for /plugin marketplace add
+|
 |-- agents/           # Specialized subagents for delegation
 |   |-- planner.md           # Feature implementation planning
 |   |-- architect.md         # System design decisions
@@ -56,13 +103,15 @@ everything-claude-code/
 |   |-- doc-updater.md       # Documentation sync
 |
 |-- skills/           # Workflow definitions and domain knowledge
-|   |-- coding-standards.md         # Language best practices
-|   |-- backend-patterns.md         # API, database, caching patterns
-|   |-- frontend-patterns.md        # React, Next.js patterns
+|   |-- coding-standards/           # Language best practices
+|   |-- backend-patterns/           # API, database, caching patterns
+|   |-- frontend-patterns/          # React, Next.js patterns
 |   |-- continuous-learning/        # Auto-extract patterns from sessions (Longform Guide)
 |   |-- strategic-compact/          # Manual compaction suggestions (Longform Guide)
 |   |-- tdd-workflow/               # TDD methodology
 |   |-- security-review/            # Security checklist
+|   |-- eval-harness/               # Verification loop evaluation (Longform Guide)
+|   |-- verification-loop/          # Continuous verification (Longform Guide)
 |
 |-- commands/         # Slash commands for quick execution
 |   |-- tdd.md              # /tdd - Test-driven development
@@ -72,8 +121,11 @@ everything-claude-code/
 |   |-- build-fix.md        # /build-fix - Fix build errors
 |   |-- refactor-clean.md   # /refactor-clean - Dead code removal
 |   |-- learn.md            # /learn - Extract patterns mid-session (Longform Guide)
+|   |-- checkpoint.md       # /checkpoint - Save verification state (Longform Guide)
+|   |-- verify.md           # /verify - Run verification loop (Longform Guide)
+|   |-- setup-pm.md         # /setup-pm - Configure package manager (NEW)
 |
-|-- rules/            # Always-follow guidelines
+|-- rules/            # Always-follow guidelines (copy to ~/.claude/rules/)
 |   |-- security.md         # Mandatory security checks
 |   |-- coding-style.md     # Immutability, file organization
 |   |-- testing.md          # TDD, 80% coverage requirement
@@ -84,10 +136,24 @@ everything-claude-code/
 |-- hooks/            # Trigger-based automations
 |   |-- hooks.json                # All hooks config (PreToolUse, PostToolUse, Stop, etc.)
 |   |-- memory-persistence/       # Session lifecycle hooks (Longform Guide)
-|   |   |-- pre-compact.sh        # Save state before compaction
-|   |   |-- session-start.sh      # Load previous context
-|   |   |-- session-end.sh        # Persist learnings on end
 |   |-- strategic-compact/        # Compaction suggestions (Longform Guide)
+|
+|-- scripts/          # Cross-platform Node.js scripts (NEW)
+|   |-- lib/                     # Shared utilities
+|   |   |-- utils.js             # Cross-platform file/path/system utilities
+|   |   |-- package-manager.js   # Package manager detection and selection
+|   |-- hooks/                   # Hook implementations
+|   |   |-- session-start.js     # Load context on session start
+|   |   |-- session-end.js       # Save state on session end
+|   |   |-- pre-compact.js       # Pre-compaction state saving
+|   |   |-- suggest-compact.js   # Strategic compaction suggestions
+|   |   |-- evaluate-session.js  # Extract patterns from sessions
+|   |-- setup-package-manager.js # Interactive PM setup
+|
+|-- tests/            # Test suite (NEW)
+|   |-- lib/                     # Library tests
+|   |-- hooks/                   # Hook tests
+|   |-- run-all.js               # Run all tests
 |
 |-- contexts/         # Dynamic system prompt injection contexts (Longform Guide)
 |   |-- dev.md              # Development mode context
@@ -97,20 +163,54 @@ everything-claude-code/
 |-- examples/         # Example configurations and sessions
 |   |-- CLAUDE.md           # Example project-level config
 |   |-- user-CLAUDE.md      # Example user-level config
-|   |-- sessions/           # Example session log files (Longform Guide)
 |
 |-- mcp-configs/      # MCP server configurations
 |   |-- mcp-servers.json    # GitHub, Supabase, Vercel, Railway, etc.
 |
-|-- plugins/          # Plugin ecosystem documentation
-    |-- README.md           # Plugins, marketplaces, skills guide
+|-- marketplace.json  # Self-hosted marketplace config (for /plugin marketplace add)
 ```
 
 ---
 
-## Quick Start
+## Installation
 
-### 1. Copy what you need
+### Option 1: Install as Plugin (Recommended)
+
+The easiest way to use this repo - install as a Claude Code plugin:
+
+```bash
+# Add this repo as a marketplace
+/plugin marketplace add affaan-m/everything-claude-code
+
+# Install the plugin
+/plugin install everything-claude-code@everything-claude-code
+```
+
+Or add directly to your `~/.claude/settings.json`:
+
+```json
+{
+  "extraKnownMarketplaces": {
+    "everything-claude-code": {
+      "source": {
+        "source": "github",
+        "repo": "affaan-m/everything-claude-code"
+      }
+    }
+  },
+  "enabledPlugins": {
+    "everything-claude-code@everything-claude-code": true
+  }
+}
+```
+
+This gives you instant access to all commands, agents, skills, and hooks.
+
+---
+
+### Option 2: Manual Installation
+
+If you prefer manual control over what's installed:
 
 ```bash
 # Clone the repo
@@ -129,22 +229,15 @@ cp everything-claude-code/commands/*.md ~/.claude/commands/
 cp -r everything-claude-code/skills/* ~/.claude/skills/
 ```
 
-### 2. Add hooks to settings.json
+#### Add hooks to settings.json
 
 Copy the hooks from `hooks/hooks.json` to your `~/.claude/settings.json`.
 
-### 3. Configure MCPs
+#### Configure MCPs
 
 Copy desired MCP servers from `mcp-configs/mcp-servers.json` to your `~/.claude.json`.
 
 **Important:** Replace `YOUR_*_HERE` placeholders with your actual API keys.
-
-### 4. Read the guides
-
-Seriously, read the guides. These configs make 10x more sense with context.
-
-1. **[Shorthand Guide](https://x.com/affaanmustafa/status/2012378465664745795)** - Setup and foundations
-2. **[Longform Guide](https://x.com/affaanmustafa/status/2014040193557471352)** - Advanced techniques (token optimization, memory persistence, evals, parallelization)
 
 ---
 
@@ -206,6 +299,22 @@ Rules are always-follow guidelines. Keep them modular:
 
 ---
 
+## Running Tests
+
+The plugin includes a comprehensive test suite:
+
+```bash
+# Run all tests
+node tests/run-all.js
+
+# Run individual test files
+node tests/lib/utils.test.js
+node tests/lib/package-manager.test.js
+node tests/hooks/hooks.test.js
+```
+
+---
+
 ## Contributing
 
 **Contributions are welcome and encouraged.**
@@ -256,6 +365,12 @@ These configs work for my workflow. You should:
 2. Modify for your stack
 3. Remove what you don't use
 4. Add your own patterns
+
+---
+
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=affaan-m/everything-claude-code&type=Date)](https://star-history.com/#affaan-m/everything-claude-code&Date)
 
 ---
 
