@@ -12,6 +12,7 @@ const fs = require('fs');
 const path = require('path');
 const { spawnSync } = require('child_process');
 const { isHookEnabled } = require('../lib/hook-flags');
+const { buildPreToolUseAdditionalContext } = require('./pretooluse-visible-output');
 
 const MAX_STDIN = 1024 * 1024;
 
@@ -53,7 +54,9 @@ function emitHookResult(raw, output) {
   if (output && typeof output === 'object') {
     writeStderr(output.stderr);
 
-    if (Object.prototype.hasOwnProperty.call(output, 'stdout')) {
+    if (Object.prototype.hasOwnProperty.call(output, 'additionalContext')) {
+      process.stdout.write(buildPreToolUseAdditionalContext(output.additionalContext));
+    } else if (Object.prototype.hasOwnProperty.call(output, 'stdout')) {
       process.stdout.write(String(output.stdout ?? ''));
     } else if (!Number.isInteger(output.exitCode) || output.exitCode === 0) {
       process.stdout.write(raw);
@@ -137,7 +140,13 @@ async function main() {
 
   if (hookModule && typeof hookModule.run === 'function') {
     try {
-      const output = hookModule.run(raw, { truncated, maxStdin: MAX_STDIN });
+      const output = hookModule.run(raw, {
+        hookId,
+        pluginRoot,
+        scriptPath,
+        truncated,
+        maxStdin: MAX_STDIN
+      });
       process.exit(emitHookResult(raw, output));
     } catch (runErr) {
       process.stderr.write(`[Hook] run() error for ${hookId}: ${runErr.message}\n`);
@@ -152,6 +161,9 @@ async function main() {
     encoding: 'utf8',
     env: {
       ...process.env,
+      CLAUDE_PLUGIN_ROOT: pluginRoot,
+      ECC_PLUGIN_ROOT: pluginRoot,
+      ECC_HOOK_ID: hookId,
       ECC_HOOK_INPUT_TRUNCATED: truncated ? '1' : '0',
       ECC_HOOK_INPUT_MAX_BYTES: String(MAX_STDIN)
     },

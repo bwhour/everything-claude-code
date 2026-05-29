@@ -12623,7 +12623,7 @@ diff --git a/src/lib.rs b/src/lib.rs
             agent_type: "claude".to_string(),
             working_dir: PathBuf::from("/tmp"),
             state: SessionState::Running,
-            pid: Some(1111),
+            pid: None,
             worktree: None,
             created_at: now - Duration::minutes(2),
             updated_at: now - Duration::minutes(2),
@@ -12638,7 +12638,7 @@ diff --git a/src/lib.rs b/src/lib.rs
             agent_type: "claude".to_string(),
             working_dir: PathBuf::from("/tmp"),
             state: SessionState::Running,
-            pid: Some(2222),
+            pid: None,
             worktree: None,
             created_at: now - Duration::minutes(1),
             updated_at: now - Duration::minutes(1),
@@ -12923,8 +12923,7 @@ diff --git a/src/lib.rs b/src/lib.rs
         let repo_root = tempdir.join("repo");
         init_git_repo(&repo_root)?;
 
-        let original_dir = std::env::current_dir()?;
-        std::env::set_current_dir(&repo_root)?;
+        let cwd_guard = crate::test_support::CurrentDirGuard::enter(&repo_root)?;
 
         let mut cfg = build_config(&tempdir);
         cfg.orchestration_templates = BTreeMap::from([(
@@ -13000,7 +12999,7 @@ diff --git a/src/lib.rs b/src/lib.rs
             ])
         );
 
-        std::env::set_current_dir(original_dir)?;
+        drop(cwd_guard);
         let _ = std::fs::remove_dir_all(&tempdir);
         Ok(())
     }

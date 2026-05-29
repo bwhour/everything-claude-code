@@ -19,7 +19,6 @@ const fs = require('fs');
 const path = require('path');
 
 const repoRoot = path.resolve(__dirname, '..');
-const repoRootWithSep = `${repoRoot}${path.sep}`;
 const packageJsonPath = path.join(repoRoot, 'package.json');
 const packageLockPath = path.join(repoRoot, 'package-lock.json');
 const rootAgentsPath = path.join(repoRoot, 'AGENTS.md');
@@ -35,6 +34,7 @@ const selectiveInstallArchitecturePath = path.join(repoRoot, 'docs', 'SELECTIVE-
 const opencodePackageJsonPath = path.join(repoRoot, '.opencode', 'package.json');
 const opencodePackageLockPath = path.join(repoRoot, '.opencode', 'package-lock.json');
 const opencodeHooksPluginPath = path.join(repoRoot, '.opencode', 'plugins', 'ecc-hooks.ts');
+const semverPattern = '[0-9]+\\.[0-9]+\\.[0-9]+(?:-[0-9A-Za-z.-]+)?';
 
 let passed = 0;
 let failed = 0;
@@ -67,16 +67,6 @@ function loadJsonObject(filePath, label) {
   );
 
   return parsed;
-}
-
-function assertSafeRepoRelativePath(relativePath, label) {
-  const normalized = path.posix.normalize(relativePath.replace(/\\/g, '/'));
-
-  assert.ok(!path.isAbsolute(relativePath), `${label} must not be absolute: ${relativePath}`);
-  assert.ok(
-    !normalized.startsWith('../') && !normalized.includes('/../'),
-    `${label} must not traverse directories: ${relativePath}`,
-  );
 }
 
 function collectMarkdownFiles(rootPath) {
@@ -118,30 +108,35 @@ test('package-lock.json root version matches package.json', () => {
 
 test('AGENTS.md version line matches package.json', () => {
   const agentsSource = fs.readFileSync(rootAgentsPath, 'utf8');
-  const match = agentsSource.match(/^\*\*Version:\*\* ([0-9]+\.[0-9]+\.[0-9]+)$/m);
+  const match = agentsSource.match(new RegExp(`^\\*\\*Version:\\*\\* (${semverPattern})$`, 'm'));
   assert.ok(match, 'Expected AGENTS.md to declare a top-level version line');
   assert.strictEqual(match[1], expectedVersion);
 });
 
 test('docs/tr/AGENTS.md version line matches package.json', () => {
   const agentsSource = fs.readFileSync(trAgentsPath, 'utf8');
-  const match = agentsSource.match(/^\*\*Sürüm:\*\* ([0-9]+\.[0-9]+\.[0-9]+)$/m);
+  const match = agentsSource.match(new RegExp(`^\\*\\*Sürüm:\\*\\* (${semverPattern})$`, 'm'));
   assert.ok(match, 'Expected docs/tr/AGENTS.md to declare a top-level version line');
   assert.strictEqual(match[1], expectedVersion);
 });
 
 test('docs/zh-CN/AGENTS.md version line matches package.json', () => {
   const agentsSource = fs.readFileSync(zhCnAgentsPath, 'utf8');
-  const match = agentsSource.match(/^\*\*版本:\*\* ([0-9]+\.[0-9]+\.[0-9]+)$/m);
+  const match = agentsSource.match(new RegExp(`^\\*\\*版本:\\*\\* (${semverPattern})$`, 'm'));
   assert.ok(match, 'Expected docs/zh-CN/AGENTS.md to declare a top-level version line');
   assert.strictEqual(match[1], expectedVersion);
 });
 
 test('agent.yaml version matches package.json', () => {
   const agentYamlSource = fs.readFileSync(agentYamlPath, 'utf8');
-  const match = agentYamlSource.match(/^version:\s*([0-9]+\.[0-9]+\.[0-9]+)$/m);
+  const match = agentYamlSource.match(new RegExp(`^version:\\s*(${semverPattern})$`, 'm'));
   assert.ok(match, 'Expected agent.yaml to declare a top-level version field');
   assert.strictEqual(match[1], expectedVersion);
+});
+
+test('agent.yaml uses canonical ECC identity', () => {
+  const agentYamlSource = fs.readFileSync(agentYamlPath, 'utf8');
+  assert.ok(/^name:\s*ecc$/m.test(agentYamlSource), 'Expected agent.yaml to use the ecc name');
 });
 
 test('VERSION file matches package.json', () => {
@@ -152,14 +147,14 @@ test('VERSION file matches package.json', () => {
 
 test('docs/SELECTIVE-INSTALL-ARCHITECTURE.md repoVersion example matches package.json', () => {
   const source = fs.readFileSync(selectiveInstallArchitecturePath, 'utf8');
-  const match = source.match(/"repoVersion":\s*"([0-9]+\.[0-9]+\.[0-9]+)"/);
+  const match = source.match(new RegExp(`"repoVersion":\\s*"(${semverPattern})"`));
   assert.ok(match, 'Expected docs/SELECTIVE-INSTALL-ARCHITECTURE.md to declare a repoVersion example');
   assert.strictEqual(match[1], expectedVersion);
 });
 
 test('.opencode/plugins/ecc-hooks.ts active plugin banner matches package.json', () => {
   const source = fs.readFileSync(opencodeHooksPluginPath, 'utf8');
-  const match = source.match(/## Active Plugin: Everything Claude Code v([0-9]+\.[0-9]+\.[0-9]+)/);
+  const match = source.match(new RegExp(`## Active Plugin: ECC v(${semverPattern})`));
   assert.ok(match, 'Expected .opencode/plugins/ecc-hooks.ts to declare an active plugin banner');
   assert.strictEqual(match[1], expectedVersion);
 });
@@ -188,6 +183,14 @@ test('README.zh-CN.md latest release heading matches package.json', () => {
   );
 });
 
+test('docs/zh-CN/README.md latest release heading matches package.json', () => {
+  const source = fs.readFileSync(zhCnReadmePath, 'utf8');
+  assert.ok(
+    source.includes(`### v${expectedVersion} `),
+    'Expected docs/zh-CN/README.md to advertise the current release heading',
+  );
+});
+
 // ── Claude plugin manifest ────────────────────────────────────────────────────
 console.log('\n=== .claude-plugin/plugin.json ===\n');
 
@@ -208,8 +211,8 @@ test('claude plugin.json version matches package.json', () => {
   assert.strictEqual(claudePlugin.version, expectedVersion);
 });
 
-test('claude plugin.json uses published plugin name', () => {
-  assert.strictEqual(claudePlugin.name, 'everything-claude-code');
+test('claude plugin.json uses short plugin slug', () => {
+  assert.strictEqual(claudePlugin.name, 'ecc');
 });
 
 test('claude plugin.json does NOT have agents field (unsupported by Claude Code validator)', () => {
@@ -225,6 +228,25 @@ test('claude plugin.json skills is an array', () => {
 
 test('claude plugin.json commands is an array', () => {
   assert.ok(Array.isArray(claudePlugin.commands), 'Expected commands to be an array');
+});
+
+test('claude plugin.json disables bundled MCP servers for provider tool-name compatibility', () => {
+  const legacyPluginName = 'everything-claude-code';
+  const reportedOverlongToolName = `mcp__plugin_${legacyPluginName}_github__create_pull_request_review`;
+
+  assert.ok(
+    reportedOverlongToolName.length > 64,
+    'Expected the reported GitHub MCP tool name to exceed strict provider limits without the MCP opt-out',
+  );
+  assert.ok(
+    Object.prototype.hasOwnProperty.call(claudePlugin, 'mcpServers'),
+    'Expected mcpServers to be explicitly declared so Claude Code does not auto-load root .mcp.json',
+  );
+  assert.deepStrictEqual(
+    claudePlugin.mcpServers,
+    {},
+    'Claude plugin installs must not auto-bundle root MCP servers; document/manual MCP install remains supported',
+  );
 });
 
 test('claude plugin.json does NOT have explicit hooks declaration', () => {
@@ -254,8 +276,8 @@ test('claude marketplace.json keeps only Claude-supported top-level keys', () =>
 
 test('claude marketplace.json has plugins array with the published plugin entry', () => {
   assert.ok(Array.isArray(claudeMarketplace.plugins) && claudeMarketplace.plugins.length > 0, 'Expected plugins array');
-  assert.strictEqual(claudeMarketplace.name, 'everything-claude-code');
-  assert.strictEqual(claudeMarketplace.plugins[0].name, 'everything-claude-code');
+  assert.strictEqual(claudeMarketplace.name, 'ecc');
+  assert.strictEqual(claudeMarketplace.plugins[0].name, 'ecc');
 });
 
 test('claude marketplace.json plugin version matches package.json', () => {
@@ -327,6 +349,11 @@ test('codex plugin.json has interface.displayName', () => {
     codexPlugin.interface && codexPlugin.interface.displayName,
     'Expected interface.displayName for plugin directory presentation',
   );
+});
+
+test('codex plugin.json uses canonical ECC repo and display name', () => {
+  assert.strictEqual(codexPlugin.repository, 'https://github.com/affaan-m/ECC');
+  assert.strictEqual(codexPlugin.interface.displayName, 'ECC');
 });
 
 // ── .mcp.json at plugin root ──────────────────────────────────────────────────
@@ -416,11 +443,15 @@ test('marketplace local plugin path resolves to the repo-root Codex bundle', () 
       continue;
     }
 
-    const resolvedRoot = path.resolve(path.dirname(marketplacePath), plugin.source.path);
+    assert.ok(
+      plugin.source.path.startsWith('./'),
+      `Codex marketplace source.path must be ./-prefixed: ${plugin.source.path}`,
+    );
+    const resolvedRoot = path.resolve(repoRoot, plugin.source.path);
     assert.strictEqual(
       resolvedRoot,
       repoRoot,
-      `Expected local marketplace path to resolve to repo root, got: ${plugin.source.path}`,
+      `Expected local marketplace path to resolve to repo root from marketplace root, got: ${plugin.source.path}`,
     );
     assert.ok(
       fs.existsSync(path.join(resolvedRoot, '.codex-plugin', 'plugin.json')),
@@ -445,23 +476,23 @@ test('.opencode/package-lock.json root version matches package.json', () => {
 
 test('README version row matches package.json', () => {
   const readme = fs.readFileSync(path.join(repoRoot, 'README.md'), 'utf8');
-  const match = readme.match(/^\| \*\*Version\*\* \| Plugin \| Plugin \| Reference config \| ([0-9][0-9.]*) \|$/m);
+  const match = readme.match(new RegExp(`^\\| \\*\\*Version\\*\\* \\| Plugin \\| Plugin \\| Reference config \\| (${semverPattern}) \\|(?: Instruction layer \\|)?$`, 'm'));
   assert.ok(match, 'Expected README version summary row');
   assert.strictEqual(match[1], expectedVersion);
 });
 
-test('user-facing docs do not use deprecated ecc@ecc install commands', () => {
+test('user-facing docs do not use overlong legacy marketplace install commands', () => {
   const markdownFiles = [
     path.join(repoRoot, 'README.md'),
     path.join(repoRoot, 'README.zh-CN.md'),
     path.join(repoRoot, 'skills', 'configure-ecc', 'SKILL.md'),
     ...collectMarkdownFiles(path.join(repoRoot, 'docs')),
-  ];
+  ].filter(filePath => !path.relative(repoRoot, filePath).startsWith(`docs${path.sep}drafts${path.sep}`));
 
   const offenders = [];
   for (const filePath of markdownFiles) {
     const source = fs.readFileSync(filePath, 'utf8');
-    if (/\/plugin\s+(install|list)\s+ecc@ecc\b/.test(source)) {
+    if (/\/plugin\s+(install|list)\s+everything-claude-code(?:@everything-claude-code)?\b/.test(source)) {
       offenders.push(path.relative(repoRoot, filePath));
     }
   }
@@ -469,7 +500,7 @@ test('user-facing docs do not use deprecated ecc@ecc install commands', () => {
   assert.deepStrictEqual(
     offenders,
     [],
-    `Deprecated ecc@ecc install commands must not appear in user-facing docs: ${offenders.join(', ')}`,
+    `Overlong legacy install commands must not appear in user-facing docs: ${offenders.join(', ')}`,
   );
 });
 
@@ -495,9 +526,29 @@ test('user-facing docs do not use the legacy non-URL marketplace add form', () =
   );
 });
 
+test('.codex-plugin README uses current marketplace add flow', () => {
+  const readme = fs.readFileSync(path.join(repoRoot, '.codex-plugin', 'README.md'), 'utf8');
+  assert.ok(
+    readme.includes('codex plugin marketplace add'),
+    'Expected .codex-plugin README to document codex plugin marketplace add',
+  );
+  assert.ok(
+    readme.includes('codex plugin marketplace add affaan-m/ECC'),
+    'Expected .codex-plugin README to document the canonical ECC repo marketplace source',
+  );
+  assert.ok(
+    readme.includes('Official Plugin Directory publishing is coming soon'),
+    'Expected .codex-plugin README to document current official directory status',
+  );
+  assert.ok(
+    !/\bcodex plugin install\b/.test(readme),
+    'codex plugin install is not a current Codex CLI command',
+  );
+});
+
 test('docs/zh-CN/README.md version row matches package.json', () => {
   const readme = fs.readFileSync(zhCnReadmePath, 'utf8');
-  const match = readme.match(/^\| \*\*版本\*\* \| 插件 \| 插件 \| 参考配置 \| ([0-9][0-9.]*) \|$/m);
+  const match = readme.match(new RegExp(`^\\| \\*\\*版本\\*\\* \\| 插件 \\| 插件 \\| 参考配置 \\| (${semverPattern}) \\|$`, 'm'));
   assert.ok(match, 'Expected docs/zh-CN/README.md version summary row');
   assert.strictEqual(match[1], expectedVersion);
 });
